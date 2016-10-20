@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">今日值班</string>
+    <style name="AppBaseTheme" parent="android:Theme.Light">
+        <!--
+            Theme customizations available in newer API levels can go in
+            res/values-vXX/styles.xml, while customizations related to
+            backward-compatibility can go here.
+        -->
+    </style>
+    <style name="AppTheme" parent="AppBaseTheme">
+        <!-- All customizations that are NOT specific to a particular API-level can go here. -->
+    </style>
+    <style name="App_EditTextStyle" parent="@android:style/Widget.EditText">
+        <item name="android:textSize">14sp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:background">@android:drawable/editbox_background</item>
+        <item name="android:textAppearance">?android:attr/textAppearanceInverse</item>
+    </style>
+    <style name="App_TextAppearance" parent="@android:style/TextAppearance">
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="ProgressBar_Mini" parent="@android:style/Widget.ProgressBar.Horizontal">
+        <item name="android:maxHeight">5dip</item>
+        <item name="android:minHeight">3dip</item>
+        <item name="android:indeterminateOnly">false</item>
+        <item name="android:indeterminateDrawable">@android:drawable/progress_indeterminate_horizontal</item>
+        <item name="android:progressDrawable">@drawable/progressbar_mini</item>
+    </style>
+    <style name="customTheme" parent="@android:style/Theme.Light.NoTitleBar">
+
+        <!-- All customizations that are NOT specific to a particular API-level can go here. -->
+        <item name="android:editTextStyle">@style/App_EditTextStyle</item>
+        <item name="android:textAppearance">@style/App_TextAppearance</item>
+        <item name="android:progressBarStyleHorizontal">@style/ProgressBar_Mini</item>
+    </style>
+</resources>
