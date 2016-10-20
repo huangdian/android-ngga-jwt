@@ -24,15 +24,15 @@ public class MainActivity extends Activity implements DownloadListener {
     private WebView webview;
     private DownloadManager dm;
     private ProgressBar myProgressBar;
-    private BroadcastReceiver onComplete=new BroadcastReceiver() {
+    private BroadcastReceiver onComplete = new BroadcastReceiver() {
         public void onReceive(Context ctxt, Intent intent) {
             System.out.println(intent);
-            if(intent.getAction().equals(DownloadManager.ACTION_DOWNLOAD_COMPLETE)){
+            if (intent.getAction().equals(DownloadManager.ACTION_DOWNLOAD_COMPLETE)) {
                 long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
                 Uri uri = dm.getUriForDownloadedFile(id);
                 String mimeType = dm.getMimeTypeForDownloadedFile(id);
-                Intent t=new Intent(Intent.ACTION_VIEW);
-                t.setDataAndType(uri,mimeType);
+                Intent t = new Intent(Intent.ACTION_VIEW);
+                t.setDataAndType(uri, mimeType);
                 t.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 try {
                     startActivity(t);
@@ -86,7 +86,7 @@ public class MainActivity extends Activity implements DownloadListener {
 
         // String url = "http://10.128.148.33:8000/telbook/tel/query!duty";
         // String url = "http://www.ng.xcs.ah";
-         String url = "http://mail.qq.com";
+        String url = "http://mail.qq.com";
 //        String url = "http://192.168.118.127:8080/";
         webview.loadUrl(url);
     }
@@ -145,7 +145,11 @@ public class MainActivity extends Activity implements DownloadListener {
     }
 
 
-    public void downloadFile(){
+    public void downloadFile(String url, String userAgent,
+                             String contentDisposition, String mimeType,
+                             long contentLength) {
+        String cookies = CookieManager.getInstance().getCookie(url);
+
 
     }
 
