@@ -1,0 +1,3 @@
+CHANGED,F:\android_studio\android-ngga-jwt\app\build\intermediates\transforms\instantRun\debug\folders\4000\5\enhanced\com\android\tools\fd\runtime\AppPatchesLoaderImpl.class
+CHANGED,F:\android_studio\android-ngga-jwt\app\build\intermediates\transforms\instantRun\debug\folders\4000\5\enhanced\ah\xcs\ngga\home\MainActivity$2$override.class
+CHANGED,F:\android_studio\android-ngga-jwt\app\build\intermediates\transforms\instantRun\debug\folders\4000\5\enhanced\ah\xcs\ngga\home\MainActivity$override.class

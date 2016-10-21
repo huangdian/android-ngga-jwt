@@ -1,6 +1,6 @@
 [
     {
-        "outputFile": "F:\\android_studio\\Ngga\\app\\build\\intermediates\\res\\merged\\debug\\values\\values.xml",
+        "outputFile": "F:\\android_studio\\android-ngga-jwt\\app\\build\\intermediates\\res\\merged\\debug\\values\\values.xml",
         "map": [
             {
                 "to": {
@@ -11,13 +11,13 @@
                     "endOffset": 92
                 },
                 "from": {
-                    "file": "F:\\android_studio\\Ngga\\app\\src\\main\\res\\values\\strings.xml",
+                    "file": "F:\\android_studio\\android-ngga-jwt\\app\\src\\main\\res\\values\\strings.xml",
                     "position": {
                         "startLine": 3,
                         "startColumn": 4,
-                        "startOffset": 58,
+                        "startOffset": 59,
                         "endColumn": 41,
-                        "endOffset": 95
+                        "endOffset": 96
                     }
                 }
             },
@@ -31,14 +31,14 @@
                     "endOffset": 383
                 },
                 "from": {
-                    "file": "F:\\android_studio\\Ngga\\app\\src\\main\\res\\values\\styles.xml",
+                    "file": "F:\\android_studio\\android-ngga-jwt\\app\\src\\main\\res\\values\\styles.xml",
                     "position": {
                         "startLine": 6,
                         "startColumn": 4,
-                        "startOffset": 191,
+                        "startOffset": 192,
                         "endLine": 12,
                         "endColumn": 12,
-                        "endOffset": 481
+                        "endOffset": 484
                     }
                 }
             },
@@ -52,14 +52,14 @@
                     "endOffset": 543
                 },
                 "from": {
-                    "file": "F:\\android_studio\\Ngga\\app\\src\\main\\res\\values\\styles.xml",
+                    "file": "F:\\android_studio\\android-ngga-jwt\\app\\src\\main\\res\\values\\styles.xml",
                     "position": {
                         "startLine": 15,
                         "startColumn": 4,
-                        "startOffset": 522,
+                        "startOffset": 525,
                         "endLine": 17,
                         "endColumn": 12,
-                        "endOffset": 679
+                        "endOffset": 682
                     }
                 }
             },
@@ -73,7 +73,7 @@
                     "endOffset": 962
                 },
                 "from": {
-                    "file": "F:\\android_studio\\Ngga\\app\\src\\main\\res\\values\\theme.xml",
+                    "file": "F:\\android_studio\\android-ngga-jwt\\app\\src\\main\\res\\values\\theme.xml",
                     "position": {
                         "startLine": 12,
                         "startColumn": 4,
@@ -94,7 +94,7 @@
                     "endOffset": 1102
                 },
                 "from": {
-                    "file": "F:\\android_studio\\Ngga\\app\\src\\main\\res\\values\\theme.xml",
+                    "file": "F:\\android_studio\\android-ngga-jwt\\app\\src\\main\\res\\values\\theme.xml",
                     "position": {
                         "startLine": 20,
                         "startColumn": 4,
@@ -115,7 +115,7 @@
                     "endOffset": 1557
                 },
                 "from": {
-                    "file": "F:\\android_studio\\Ngga\\app\\src\\main\\res\\values\\theme.xml",
+                    "file": "F:\\android_studio\\android-ngga-jwt\\app\\src\\main\\res\\values\\theme.xml",
                     "position": {
                         "startLine": 24,
                         "startColumn": 4,
@@ -136,7 +136,7 @@
                     "endOffset": 1985
                 },
                 "from": {
-                    "file": "F:\\android_studio\\Ngga\\app\\src\\main\\res\\values\\theme.xml",
+                    "file": "F:\\android_studio\\android-ngga-jwt\\app\\src\\main\\res\\values\\theme.xml",
                     "position": {
                         "startLine": 4,
                         "startColumn": 4,

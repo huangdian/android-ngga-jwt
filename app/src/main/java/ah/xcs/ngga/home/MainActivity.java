@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
@@ -19,25 +18,20 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
-import com.loopj.android.http.PersistentCookieStore;
 
 import java.io.File;
 
 import cz.msebera.android.httpclient.Header;
-import cz.msebera.android.httpclient.client.CookieStore;
-import cz.msebera.android.httpclient.cookie.Cookie;
-import cz.msebera.android.httpclient.impl.cookie.BasicClientCookie;
 
 
 public class MainActivity extends Activity implements DownloadListener {
     private WebView webview;
     private DownloadManager dm;
     private ProgressBar myProgressBar;
-    AsyncHttpClient client=new AsyncHttpClient();
+    AsyncHttpClient client = new AsyncHttpClient();
     private BroadcastReceiver onComplete = new BroadcastReceiver() {
         public void onReceive(Context ctxt, Intent intent) {
             System.out.println(intent);
@@ -139,7 +133,7 @@ public class MainActivity extends Activity implements DownloadListener {
     public void onDownloadStart(String url, String userAgent,
                                 String contentDisposition, String mimeType,
                                 long contentLength) {
-        downloadFile(url);
+        downloadFile(url, userAgent,contentDisposition, mimeType);
 //        DownloadManager.Request request = new DownloadManager.Request(
 //                Uri.parse(url));
 //        request.setMimeType(mimeType);
@@ -160,20 +154,47 @@ public class MainActivity extends Activity implements DownloadListener {
     }
 
 
-    public void downloadFile(String url) {
+    public void downloadFile(final String url, String userAgent,  String contentDisposition, final String mimeType) {
         String cookies = CookieManager.getInstance().getCookie(url);
-        client.addHeader("cookie",cookies);
-        client.get(url,new FileAsyncHttpResponseHandler(this){
+//        client.addHeader("cookie", cookies);
+//        client.setUserAgent(userAgent);
+        client.get(url, new FileAsyncHttpResponseHandler(this) {
             @Override
             public void onFailure(int statusCode, Header[] headers, Throwable throwable, File file) {
 
             }
+
             @Override
             public void onSuccess(int statusCode, Header[] headers, File file) {
+                String filename="unknown";
+                for(Header h:headers){
+                    if("Content-Disposition".equals(h.getName())){
+                        filename=URLUtil.guessFileName(url,h.getValue(),mimeType);
+                        filename=Uri.decode(filename);
+                    }
+                }
+                File target =new File(file.getParent(),filename);
+                if(target.exists()){target.delete();}
+                file.setReadable(true);
+                file.renameTo(target);
+                target.setReadable(true);
+
+                String mt = null ;
+                if ("text/plain".equals(mimeType) ||
+                        "application/octet-stream".equals(mimeType)) {
+                    String[] dot =  filename.split("\\.");
+                    String extention  = dot[dot.length-1];
+                    mt = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extention);
+                    if(mt==null){
+                        mt= "*/*";
+                    }
+                }else{
+                    mt=mimeType;
+                }
                 Intent t = new Intent(Intent.ACTION_VIEW);
-                String mimeType = MimeTypeMap.getFileExtensionFromUrl(file.getAbsolutePath());
-                t.setDataAndType(Uri.fromFile(file), mimeType);
+                t.setDataAndType(Uri.fromFile(file), mt);
                 t.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                System.out.println(t);
                 try {
                     startActivity(t);
                 } catch (Exception e) {
