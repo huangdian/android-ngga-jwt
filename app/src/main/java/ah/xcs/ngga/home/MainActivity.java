@@ -1,18 +1,16 @@
 package ah.xcs.ngga.home;
 
 import android.app.Activity;
-import android.app.DownloadManager;
-import android.content.BroadcastReceiver;
-import android.content.Context;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.MimeTypeMap;
-import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -21,35 +19,20 @@ import android.widget.ProgressBar;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
+import com.loopj.android.http.RequestHandle;
 
 import java.io.File;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import cz.msebera.android.httpclient.Header;
 
 
 public class MainActivity extends Activity implements DownloadListener {
     private WebView webview;
-    private DownloadManager dm;
     private ProgressBar myProgressBar;
     AsyncHttpClient client = new AsyncHttpClient();
-    private BroadcastReceiver onComplete = new BroadcastReceiver() {
-        public void onReceive(Context ctxt, Intent intent) {
-            System.out.println(intent);
-            if (intent.getAction().equals(DownloadManager.ACTION_DOWNLOAD_COMPLETE)) {
-                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-                Uri uri = dm.getUriForDownloadedFile(id);
-                String mimeType = dm.getMimeTypeForDownloadedFile(id);
-                Intent t = new Intent(Intent.ACTION_VIEW);
-                t.setDataAndType(uri, mimeType);
-                t.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                try {
-                    startActivity(t);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    };
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,10 +64,7 @@ public class MainActivity extends Activity implements DownloadListener {
         webview.getSettings().setAllowFileAccess(true);
         webview.getSettings().setAllowFileAccessFromFileURLs(true);
         webview.getSettings().setAllowUniversalAccessFromFileURLs(true);
-
-        dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         webview.setDownloadListener(this);
-        registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
         String userAgentString = webview.getSettings().getUserAgentString();
         webview.clearCache(true);
         // webview.getSettings().setAppCacheEnabled(false);
@@ -102,19 +82,23 @@ public class MainActivity extends Activity implements DownloadListener {
     private class MyWebChromeClient extends WebChromeClient {
         @Override
         public void onProgressChanged(WebView view, int newProgress) {
-            if (newProgress < 100) {
-                if (myProgressBar.getVisibility() == View.INVISIBLE) {
-                    myProgressBar.setVisibility(View.VISIBLE);
-                }
-                myProgressBar.setProgress(newProgress);
-            } else {
-                myProgressBar.setProgress(100);
-                myProgressBar.setVisibility(View.INVISIBLE);
-            }
+            showProgress(newProgress);
             super.onProgressChanged(view, newProgress);
         }
 
 
+    }
+
+    private void showProgress(int newProgress) {
+        if (newProgress < 100) {
+            if (myProgressBar.getVisibility() == View.INVISIBLE) {
+                myProgressBar.setVisibility(View.VISIBLE);
+            }
+            myProgressBar.setProgress(newProgress);
+        } else {
+            myProgressBar.setProgress(100);
+            myProgressBar.setVisibility(View.INVISIBLE);
+        }
     }
 
 
@@ -130,35 +114,78 @@ public class MainActivity extends Activity implements DownloadListener {
 
 
     @Override
-    public void onDownloadStart(String url, String userAgent,
-                                String contentDisposition, String mimeType,
+    public void onDownloadStart(final String url, final String userAgent,
+                                final String contentDisposition, final String mimeType,
                                 long contentLength) {
-        downloadFile(url, userAgent,contentDisposition, mimeType);
-//        DownloadManager.Request request = new DownloadManager.Request(
-//                Uri.parse(url));
-//        request.setMimeType(mimeType);
-//        String cookies = CookieManager.getInstance().getCookie(url);
-//        request.addRequestHeader("cookie", cookies);
-//        request.addRequestHeader("User-Agent", userAgent);
-//        request.setDescription("Downloading file...");
-//        request.setTitle(URLUtil.guessFileName(url, contentDisposition,
-//                mimeType));
-//        //request.allowScanningByMediaScanner();
-//        //request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-//        request.setDestinationInExternalPublicDir(
-//                Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(
-//                        url, contentDisposition, mimeType));
-//        long id = dm.enqueue(request);
-//        Toast.makeText(getApplicationContext(), "Downloading File",
-//                Toast.LENGTH_LONG).show();
+        //todo 对话框提示文件大小，是否下载打开,提供取消按钮
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        String fileSize = contentLength < 1024 * 1024 ? contentLength + " KB" : contentLength / (1024 * 1024) + " MB";
+        builder.setTitle("打开文件").setMessage("当前文件大小" + fileSize + ",是否下载打开文件?").setPositiveButton("下载打开", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                downloadFile(url, userAgent, contentDisposition, mimeType);
+            }
+        }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                return;
+            }
+        });
+        builder.create().show();
     }
 
+    AlertDialog dialog;
+    RequestHandle req = null;
+    Pattern CONTENT_DISPOSITION_PATTERN = Pattern.compile("filename=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE);
 
-    public void downloadFile(final String url, String userAgent,  String contentDisposition, final String mimeType) {
+    public void downloadFile(final String url, String userAgent, String contentDisposition, String mimeType) {
+
+        dialog = new AlertDialog.Builder(this).setTitle("文件下载").setMessage("下载中...")
+                .setCancelable(false)
+                .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        req.cancel(true);
+                    }
+                }).create();
+
         String cookies = CookieManager.getInstance().getCookie(url);
-//        client.addHeader("cookie", cookies);
-//        client.setUserAgent(userAgent);
-        client.get(url, new FileAsyncHttpResponseHandler(this) {
+        client.addHeader("cookie", cookies);
+        client.setUserAgent(userAgent);
+        contentDisposition = Uri.decode(contentDisposition);
+        String filename = "";
+        Matcher m = CONTENT_DISPOSITION_PATTERN.matcher(contentDisposition);
+        if (m.find()) {
+            filename = m.group(1);
+            filename = filename.replace("filename=", "").replace("\"", "");
+        }
+        if ("text/plain".equals(mimeType) ||
+                "application/octet-stream".equals(mimeType)) {
+            String[] dot = filename.split("\\.");
+            String extention = dot[dot.length - 1];
+            mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extention);
+            if (mimeType == null) {
+                mimeType = "*/*";
+            }
+        }
+        final String mt = mimeType;
+        File path = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        File target = new File(path.getPath(), filename);
+
+        req = client.get(url, new FileAsyncHttpResponseHandler(target) {
+
+            @Override
+            public void onProgress(long bytesWritten, long totalSize) {
+                //更新进度条
+                int percent = (int) ((bytesWritten * 100f) / totalSize);
+                showProgress(percent);
+            }
+
+            @Override
+            public void onCancel() {
+                showProgress(100);
+            }
+
             @Override
             public void onFailure(int statusCode, Header[] headers, Throwable throwable, File file) {
 
@@ -166,42 +193,20 @@ public class MainActivity extends Activity implements DownloadListener {
 
             @Override
             public void onSuccess(int statusCode, Header[] headers, File file) {
-                String filename="unknown";
-                for(Header h:headers){
-                    if("Content-Disposition".equals(h.getName())){
-                        filename=URLUtil.guessFileName(url,h.getValue(),mimeType);
-                        filename=Uri.decode(filename);
-                    }
-                }
-                File target =new File(file.getParent(),filename);
-                if(target.exists()){target.delete();}
-                file.setReadable(true);
-                file.renameTo(target);
-                target.setReadable(true);
-
-                String mt = null ;
-                if ("text/plain".equals(mimeType) ||
-                        "application/octet-stream".equals(mimeType)) {
-                    String[] dot =  filename.split("\\.");
-                    String extention  = dot[dot.length-1];
-                    mt = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extention);
-                    if(mt==null){
-                        mt= "*/*";
-                    }
-                }else{
-                    mt=mimeType;
-                }
+                String filename = file.getName();
                 Intent t = new Intent(Intent.ACTION_VIEW);
                 t.setDataAndType(Uri.fromFile(file), mt);
                 t.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 System.out.println(t);
                 try {
+                    dialog.dismiss();
                     startActivity(t);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         });
+        dialog.show();
     }
 }
 
