@@ -16,6 +16,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
@@ -25,12 +26,14 @@ import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ah.xcs.ngga.util.ProxyUtil;
 import cz.msebera.android.httpclient.Header;
 
 
 public class MainActivity extends Activity implements DownloadListener {
     private WebView webview;
     private ProgressBar myProgressBar;
+    private String ref;
     AsyncHttpClient client = new AsyncHttpClient();
 
 
@@ -41,8 +44,8 @@ public class MainActivity extends Activity implements DownloadListener {
         myProgressBar = (ProgressBar) findViewById(R.id.progressBar1);
 
         webview = (WebView) findViewById(R.id.webView1);
-//		ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
-//      client.setProxy("127.0.0.1",7001);
+        ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
+        client.setProxy("127.0.0.1", 7001);
 
         webview.setWebViewClient(new NggaWebViewClient());
         webview.setWebChromeClient(new MyWebChromeClient());
@@ -73,8 +76,8 @@ public class MainActivity extends Activity implements DownloadListener {
         // registerReceiver(new ProxyChangeReceiver(), filter);
 
         // String url = "http://10.128.148.33:8000/telbook/tel/query!duty";
-        // String url = "http://www.ng.xcs.ah";
-        String url = "http://mail.qq.com";
+        String url = "http://www.ng.xcs.ah";
+//        String url = "http://mail.qq.com";
 //        String url = "http://192.168.118.127:8080/";
         webview.loadUrl(url);
     }
@@ -109,7 +112,16 @@ public class MainActivity extends Activity implements DownloadListener {
     }
 
     private class NggaWebViewClient extends WebViewClient {
-
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            ref = url;
+            if (url.startsWith("ftp://")) {
+                Toast.makeText(getApplicationContext(), "暂不支持ftp下载", Toast.LENGTH_LONG).show();
+                return true;
+            } else {
+                return super.shouldOverrideUrlLoading(view, url);
+            }
+        }
     }
 
 
@@ -119,7 +131,10 @@ public class MainActivity extends Activity implements DownloadListener {
                                 long contentLength) {
         //todo 对话框提示文件大小，是否下载打开,提供取消按钮
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        String fileSize = contentLength < 1024 * 1024 ? contentLength + " KB" : contentLength / (1024 * 1024) + " MB";
+        String fileSize="未知";
+        if(contentLength!=-1){
+            fileSize = contentLength < 1024 * 1024 ? (contentLength / 1024) + " KB" : contentLength / (1024 * 1024) + " MB";
+        }
         builder.setTitle("打开文件").setMessage("当前文件大小" + fileSize + ",是否下载打开文件?").setPositiveButton("下载打开", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -151,6 +166,7 @@ public class MainActivity extends Activity implements DownloadListener {
 
         String cookies = CookieManager.getInstance().getCookie(url);
         client.addHeader("cookie", cookies);
+        client.addHeader("Referer", ref);
         client.setUserAgent(userAgent);
         contentDisposition = Uri.decode(contentDisposition);
         String filename = "";
@@ -169,9 +185,8 @@ public class MainActivity extends Activity implements DownloadListener {
             }
         }
         final String mt = mimeType;
-        File path = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         File target = new File(path.getPath(), filename);
-
         req = client.get(url, new FileAsyncHttpResponseHandler(target) {
 
             @Override
@@ -194,6 +209,7 @@ public class MainActivity extends Activity implements DownloadListener {
             @Override
             public void onSuccess(int statusCode, Header[] headers, File file) {
                 String filename = file.getName();
+                file.setReadable(true);
                 Intent t = new Intent(Intent.ACTION_VIEW);
                 t.setDataAndType(Uri.fromFile(file), mt);
                 t.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
