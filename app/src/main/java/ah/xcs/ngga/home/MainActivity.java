@@ -12,6 +12,8 @@ import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.MimeTypeMap;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -23,10 +25,13 @@ import com.loopj.android.http.FileAsyncHttpResponseHandler;
 import com.loopj.android.http.RequestHandle;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import ah.xcs.ngga.util.ProxyUtil;
+import ah.xcs.ngga.util.StringUtil;
 import cz.msebera.android.httpclient.Header;
 
 
@@ -122,6 +127,43 @@ public class MainActivity extends Activity implements DownloadListener {
                 return super.shouldOverrideUrlLoading(view, url);
             }
         }
+
+        @Override
+        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+            WebResourceResponse response = super.shouldInterceptRequest(view, request);
+            //todo 调整response的编码，解决乱码
+            String mimeType = response.getMimeType();
+            String encoding = response.getEncoding();
+            System.out.println(encoding);
+            InputStream inputStream = null;
+            try {
+                if ("text/plain".equals(mimeType) ||
+                        "text/html".equals(mimeType)) {
+                    StringBuilder stringBuilder = null;
+                    byte[] buffer = new byte[2048];
+                    int readBytes = 0;
+                    inputStream = response.getData();
+                    stringBuilder = new StringBuilder();
+                    while ((readBytes = inputStream.read(buffer)) > 0) {
+                        stringBuilder.append(new String(buffer, 0, readBytes));
+                    }
+                    encoding = StringUtil.getEncoding(stringBuilder.toString());
+                    inputStream.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            response.setEncoding(encoding);
+            return response;
+        }
     }
 
 
@@ -131,8 +173,8 @@ public class MainActivity extends Activity implements DownloadListener {
                                 long contentLength) {
         //todo 对话框提示文件大小，是否下载打开,提供取消按钮
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        String fileSize="未知";
-        if(contentLength!=-1){
+        String fileSize = "未知";
+        if (contentLength != -1) {
             fileSize = contentLength < 1024 * 1024 ? (contentLength / 1024) + " KB" : contentLength / (1024 * 1024) + " MB";
         }
         builder.setTitle("打开文件").setMessage("当前文件大小" + fileSize + ",是否下载打开文件?").setPositiveButton("下载打开", new DialogInterface.OnClickListener() {
