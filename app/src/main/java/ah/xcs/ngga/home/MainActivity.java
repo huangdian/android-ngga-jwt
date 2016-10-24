@@ -12,8 +12,6 @@ import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.MimeTypeMap;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -24,13 +22,16 @@ import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
 import com.loopj.android.http.RequestHandle;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ah.xcs.ngga.util.ProxyUtil;
 import ah.xcs.ngga.util.StringUtil;
 import cz.msebera.android.httpclient.Header;
 
@@ -49,8 +50,8 @@ public class MainActivity extends Activity implements DownloadListener {
         myProgressBar = (ProgressBar) findViewById(R.id.progressBar1);
 
         webview = (WebView) findViewById(R.id.webView1);
-        ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
-        client.setProxy("127.0.0.1", 7001);
+//        ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
+//        client.setProxy("127.0.0.1", 7001);
 
         webview.setWebViewClient(new NggaWebViewClient());
         webview.setWebChromeClient(new MyWebChromeClient());
@@ -81,8 +82,8 @@ public class MainActivity extends Activity implements DownloadListener {
         // registerReceiver(new ProxyChangeReceiver(), filter);
 
         // String url = "http://10.128.148.33:8000/telbook/tel/query!duty";
-        String url = "http://www.ng.xcs.ah";
-//        String url = "http://mail.qq.com";
+//        String url = "http://www.ng.xcs.ah";
+        String url = "http://www.baidu.com";
 //        String url = "http://192.168.118.127:8080/";
         webview.loadUrl(url);
     }
@@ -124,45 +125,35 @@ public class MainActivity extends Activity implements DownloadListener {
                 Toast.makeText(getApplicationContext(), "暂不支持ftp下载", Toast.LENGTH_LONG).show();
                 return true;
             } else {
+                try {
+                    URL aURL = new URL(url);
+                    URLConnection conn = aURL.openConnection();
+                    conn.connect();
+                    InputStream is = conn.getInputStream();
+                    String htmlContent = convertToString(is);
+
+                    String contentEncoding = conn.getContentEncoding();
+                    if(contentEncoding==null||"".equals(contentEncoding)){
+                        contentEncoding = StringUtil.getEncoding(htmlContent);
+                        webview.loadData(htmlContent,conn.getContentType(),contentEncoding);
+                        return true;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 return super.shouldOverrideUrlLoading(view, url);
             }
         }
-
-        @Override
-        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-            WebResourceResponse response = super.shouldInterceptRequest(view, request);
-            //todo 调整response的编码，解决乱码
-            String mimeType = response.getMimeType();
-            String encoding = response.getEncoding();
-            System.out.println(encoding);
-            InputStream inputStream = null;
+        public String convertToString(InputStream inputStream){
+            StringBuffer string = new StringBuffer();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            String line="";
             try {
-                if ("text/plain".equals(mimeType) ||
-                        "text/html".equals(mimeType)) {
-                    StringBuilder stringBuilder = null;
-                    byte[] buffer = new byte[2048];
-                    int readBytes = 0;
-                    inputStream = response.getData();
-                    stringBuilder = new StringBuilder();
-                    while ((readBytes = inputStream.read(buffer)) > 0) {
-                        stringBuilder.append(new String(buffer, 0, readBytes));
-                    }
-                    encoding = StringUtil.getEncoding(stringBuilder.toString());
-                    inputStream.close();
+                while ((line = reader.readLine()) != null) {
+                    string.append(line + "\n");
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                if (inputStream != null) {
-                    try {
-                        inputStream.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            response.setEncoding(encoding);
-            return response;
+            } catch (IOException e) {}
+            return string.toString();
         }
     }
 
