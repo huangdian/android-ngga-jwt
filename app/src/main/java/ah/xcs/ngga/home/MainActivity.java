@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
@@ -32,6 +33,7 @@ import java.net.URLConnection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ah.xcs.ngga.util.ProxyUtil;
 import ah.xcs.ngga.util.StringUtil;
 import cz.msebera.android.httpclient.Header;
 
@@ -50,8 +52,8 @@ public class MainActivity extends Activity implements DownloadListener {
         myProgressBar = (ProgressBar) findViewById(R.id.progressBar1);
 
         webview = (WebView) findViewById(R.id.webView1);
-//        ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
-//        client.setProxy("127.0.0.1", 7001);
+        ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
+        client.setProxy("127.0.0.1", 7001);
 
         webview.setWebViewClient(new NggaWebViewClient());
         webview.setWebChromeClient(new MyWebChromeClient());
@@ -62,29 +64,29 @@ public class MainActivity extends Activity implements DownloadListener {
         webview.getSettings().setBuiltInZoomControls(true);
         webview.getSettings().setDisplayZoomControls(false);
         webview.getSettings().setLayoutAlgorithm(
-                WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
+                WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING);
         webview.getSettings().setUseWideViewPort(true);
         webview.getSettings().setLoadWithOverviewMode(true);
-        webview.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
+        if (Build.VERSION.SDK_INT >= 19) {
+            webview.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);//缓存
+        }
         webview.getSettings().setAppCacheEnabled(true);
         webview.getSettings().setDatabaseEnabled(true);
         webview.getSettings().setDomStorageEnabled(true);
         webview.getSettings().setAllowContentAccess(true);
+        webview.getSettings().setDefaultTextEncodingName("GBK");
         webview.getSettings().setAllowFileAccess(true);
         webview.getSettings().setAllowFileAccessFromFileURLs(true);
         webview.getSettings().setAllowUniversalAccessFromFileURLs(true);
+        webview.getSettings().setLoadsImagesAutomatically(true);
+//        webview.getSettings().setBlockNetworkLoads(true);
         webview.setDownloadListener(this);
+
         String userAgentString = webview.getSettings().getUserAgentString();
-        webview.clearCache(true);
-        // webview.getSettings().setAppCacheEnabled(false);
-
-        // IntentFilter filter = new IntentFilter(Proxy.PROXY_CHANGE_ACTION);
-        // registerReceiver(new ProxyChangeReceiver(), filter);
-
+//        webview.clearCache(true);
         // String url = "http://10.128.148.33:8000/telbook/tel/query!duty";
-//        String url = "http://www.ng.xcs.ah";
-        String url = "http://www.baidu.com";
-//        String url = "http://192.168.118.127:8080/";
+        String url = "http://www.ng.xcs.ah";
+//        String url = "http://www.baidu.com";
         webview.loadUrl(url);
     }
 
@@ -124,35 +126,20 @@ public class MainActivity extends Activity implements DownloadListener {
             if (url.startsWith("ftp://")) {
                 Toast.makeText(getApplicationContext(), "暂不支持ftp下载", Toast.LENGTH_LONG).show();
                 return true;
-            } else {
-                try {
-                    URL aURL = new URL(url);
-                    URLConnection conn = aURL.openConnection();
-                    conn.connect();
-                    InputStream is = conn.getInputStream();
-                    String htmlContent = convertToString(is);
-
-                    String contentEncoding = conn.getContentEncoding();
-                    if(contentEncoding==null||"".equals(contentEncoding)){
-                        contentEncoding = StringUtil.getEncoding(htmlContent);
-                        webview.loadData(htmlContent,conn.getContentType(),contentEncoding);
-                        return true;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return super.shouldOverrideUrlLoading(view, url);
             }
+            return super.shouldOverrideUrlLoading(view, url);
         }
-        public String convertToString(InputStream inputStream){
+
+        public String convertToString(InputStream inputStream) {
             StringBuffer string = new StringBuffer();
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            String line="";
+            String line = "";
             try {
                 while ((line = reader.readLine()) != null) {
                     string.append(line + "\n");
                 }
-            } catch (IOException e) {}
+            } catch (IOException e) {
+            }
             return string.toString();
         }
     }
