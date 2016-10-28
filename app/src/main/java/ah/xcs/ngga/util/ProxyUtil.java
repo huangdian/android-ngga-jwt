@@ -1,11 +1,5 @@
 package ah.xcs.ngga.util;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -17,6 +11,12 @@ import android.os.Parcelable;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.webkit.WebView;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 //資料來源:https://stackoverflow.com/questions/19979578/android-webview-set-proxy-programatically-kitkat
 /*
@@ -48,7 +48,7 @@ public class ProxyUtil {
 			// return setProxyKKPlus(webview, host, port, applicationClassName);
 		} else {
 			// 6.0 M
-			return setProxyKKPlus(webview, host, port, "", applicationClassName);
+			return setProxyKKPlus(webview, host, port, "127.0.0.1", applicationClassName);
 			// return setKitKatWebViewProxy(webview, host, port);
 		}
 	}
