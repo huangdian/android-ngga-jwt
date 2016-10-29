@@ -52,8 +52,8 @@ public class MainActivity extends Activity implements DownloadListener {
         myProgressBar = (ProgressBar) findViewById(R.id.progressBar1);
 
         webview = (WebView) findViewById(R.id.webView1);
-        ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
-        client.setProxy("127.0.0.1", 7001);
+//        ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
+//        client.setProxy("127.0.0.1", 7001);
 
         webview.setWebViewClient(new NggaWebViewClient());
         webview.setWebChromeClient(new MyWebChromeClient());
@@ -64,11 +64,11 @@ public class MainActivity extends Activity implements DownloadListener {
         webview.getSettings().setBuiltInZoomControls(true);
         webview.getSettings().setDisplayZoomControls(false);
         webview.getSettings().setLayoutAlgorithm(
-                WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING);
+                WebSettings.LayoutAlgorithm.NORMAL);
         webview.getSettings().setUseWideViewPort(true);
         webview.getSettings().setLoadWithOverviewMode(true);
         if (Build.VERSION.SDK_INT >= 19) {
-            webview.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);//缓存
+            webview.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);//缓存
         }
         webview.getSettings().setAppCacheEnabled(true);
         webview.getSettings().setDatabaseEnabled(true);
@@ -85,8 +85,9 @@ public class MainActivity extends Activity implements DownloadListener {
         String userAgentString = webview.getSettings().getUserAgentString();
 //        webview.clearCache(true);
         // String url = "http://10.128.148.33:8000/telbook/tel/query!duty";
-        String url = "http://www.ng.xcs.ah";
+//        String url = "http://www.ng.xcs.ah";
 //        String url = "http://www.baidu.com";
+        String url = "http://192.168.0.114:8080";
         webview.loadUrl(url);
     }
 
