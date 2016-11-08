@@ -1,0 +1,149 @@
+@charset "utf-8";
+/* CSS Document */
+
+HTML {
+	BORDER-BOTTOM: 0px; BORDER-LEFT: 0px; HEIGHT: 100%; BORDER-TOP: 0px; BORDER-RIGHT: 0px; 
+}
+body,div{ padding:0px; margin:0px;font-size:12px}
+ul,ol,li,span{margin:0px;border: 0px;z-index:inherit}
+.main{
+	width: 100%;
+	height: auto;
+	overflow:hidden;
+	position: relative;
+	margin: 0 auto;	
+}
+.top{
+	height: 70px;
+	width: 100%;
+	background-image: url(../imgs/bg-main.png);
+	background-repeat: no-repeat;
+	background-position: right;	
+}
+.logo{
+	padding-left:15px;
+	padding-top:12px;
+	float:left;	
+}
+/*标题中上半部的高度*/
+.top_titile{height:40px}
+.name{
+	float:left;
+	padding-top:15px;
+	margin-left:30px;
+	color:#437ca0;
+}
+.name ul li a:link,.name ul li a:visited{color:#437ca0; text-decoration: none;}
+.name ul li a:hover{text-decoration:underline;cursor: pointer;}
+.float_right{float:right;}
+.float_left{float:left;}
+.name  ul li{ list-style:none;display:inline;margin-right:1px;} 
+.font_12{font-size:12px}
+.font_14{font-size:14px}
+.font_16{font-size:16px}
+.font_18{font-size:18px}
+.font_20{font-size:20px}
+.menu{
+	margin-left:200px;
+	height:23px;
+}
+.title{}
+.ipt{height:15px;color: #999;border-right: medium none;}
+.input_focse{color: black;}
+.sch_btn,.sch_hbtn{background-image:url(../imgs/search.png);background-repeat:no-repeat;}
+.sch_btn{ background-position: 0px 0px;  display: block;  width: 22px; cursor:pointer;  height: 20px;border-style:none; }
+.sch_btn:hover { background-position: 0px -20px;}
+.sch_hbtn{ background-position: -23px 0px;  display: block; width: 12px; cursor: hand; height: 20px;}
+.sch_hbtn:hover { background-position: -23px -20px;}
+/*分割线*/
+.sperater{
+	padding:0px;
+	margin:0px;
+	border:solid 3px #A5E6E9;		
+}
+.bottom{
+	width: 100%;
+	height:auto;
+	overflow:hidden;	
+}
+/*左边功能区*/
+.left{
+	width: 195px;
+	border-right: 5px solid #A5E6E9;
+	float:left;
+	height:450px;
+	background-color: #DDF2E0;
+}
+/*左边收写信样式开始*/
+.bigbtnwp a.ashouxin,.bigbtnwp a.axiexin,.bigbtnwp,.sb_line{background-image:url('../imgs/f1.gif');background-repeat:no-repeat;}
+.tbsb {
+	table-layout: fixed
+}
+.tbsbtop {
+	height: 45px
+}
+.bigbtnwp {
+	background-position: -256px 0px; position: relative; height: 45px;padding:0px;margin:0px;
+}
+.bigbtnwp a:link {
+	color: #fff; text-decoration: none
+}
+.bigbtnwp a:visited {
+	color: #fff; text-decoration: none
+}
+.bigbtnwp a:hover {
+	color: #fff; text-decoration: none
+}
+.bigbtnwp a.ashouxin {
+	display: block; width: 93px; position: absolute; height: 37px
+}
+.bigbtnwp a.axiexin {
+	display: block; width: 93px; position: absolute; height: 37px
+}
+.bigbtnwp a.ashouxin {
+	background-position: -260px 0px; left: 4px; top: 0px
+}
+.bigbtnwp a.axiexin {
+	background-position: -353px 0px; left: 97px; top: 0px
+}
+.bigbtnwp a.ashouxin:hover {
+	background-position: -260px -64px
+}
+.bigbtnwp a.axiexin:hover {
+	background-position: -353px -64px
+}
+/*左边收写信样式结束*/
+/*左边功能列表分割线*/
+.sb_line {
+	background-position: -608px -124px;  line-height: 11px; height: 11px
+}
+
+/*左边功能列表区*/
+.list{padding:0px;margin:0px;text-align:center;font-size:14px;}
+.list ul li{margin-bottom:12px;padding-left:12px;list-style-position: outside;}
+.list ul li:hover{	font-weight: bold;background-color:#A5E6E9}
+.list_focse{font-weight: bold;background-color:#A5E6E9}
+/*左边功能列表连接样式*/
+.list ul li a:link ,.list ul li a:visited,.list ul li a:hover {color:#437ca0;}
+/*列表图标*/
+.receive{
+	list-style-image: url(../imgs/receive.png);
+	padding-top:5px;
+}
+.drift{list-style-image: url(../imgs/drift.png);}
+.sended{list-style-image: url(../imgs/sended.png);}
+.deleted{list-style-image: url(../imgs/delete.png);}
+.spam{list-style-image: url(../imgs/spam.png);}
+.linkman{list-style-image: url(../imgs/linkman.png);}
+.person{list-style-image: url(../imgs/person.png);}
+
+/*右边内容区*/
+.right{
+	width: auto;
+	overflow:hidden;
+}
+/*消息提示区*/
+.message{height: 18px; width: auto; position: absolute;margin: 0 auto; padding: 3px 10px;left: 400px;display: none;}
+.success{ background-color: green; display: block;}
+.error{background-color:  #B93358; display: block;}
+#message{color: white;}

@@ -1,0 +1,29 @@
+@CHARSET "UTF-8";
+body {
+    color: #000000;
+    font-family: verdana,arial,helvetica,sans-serif;
+    font-size: 12px;
+    margin: 0;
+    padding: 0;
+}
+#main{width:auto;margin:0px auto; margin-left: 20px;}
+.tdLabel {
+	text-align: right;
+	vertical-align: top;
+	height: 35px;
+	width: 155px
+}
+.wwFormTable {
+	width: auto;
+}
+.top {
+	height: 30px;
+	background: #A5E6E9;
+	padding-left: 10px;
+    padding-top: 5px;
+    margin-bottom: 10px;
+}
+.button{
+font:13px/1.6 Arial, Helvetica, sans-serif;
+font-weight:normal;
+}

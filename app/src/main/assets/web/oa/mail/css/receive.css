@@ -1,0 +1,141 @@
+@charset "utf-8";
+/* CSS Document */
+.font_20 {
+	font-size: 20px;
+}
+
+.font_14 {
+	font-size: 14px;
+}
+
+.font_12 {
+	font-size: 12px;
+}
+
+.font_12 {
+	font-size: 12px;
+}
+
+.inbox {
+	font-size: 16px
+}
+
+.red {
+	color: #FF6666
+}
+
+.title {
+	margin-bottom: 10px
+}
+
+.tool {
+	margin-bottom: 10px;
+	height: 30px;
+	background: #A5E6E9;
+	padding-left: 10px;
+	padding-top: 5px;
+}
+
+.menu {
+	float: left
+}
+
+.page {
+	float: right;
+}
+
+.message {
+	clear: left
+}
+
+.sel {
+	margin-left: 10px
+}
+
+.icoibx,.unread_message,.read_message,.attachment {
+	background-image: url(../imgs/ico.gif);
+	background-repeat: no-repeat;
+}
+
+.ibx_th_f {
+	width: 20px;
+}
+
+.ibx_th_chkbx {
+	text-align: center;
+	width: 28px;
+}
+
+.ibx_th_icoinfo {
+	border-right: 1px solid #D6D6D6;
+	text-align: center;
+	width: 32px;
+}
+
+.icoibx {
+	height: 16px;
+	line-height: 16px;
+	padding: 0 8px;
+	background-position: -168px -8px;
+}
+
+.oa_table  .attachment {
+	height: 16px;
+	line-height: 16px;
+	background-position: -135px -8px;
+	padding: 0 8px;
+}
+
+.unread_message {
+	height: 16px;
+	line-height: 16px;
+	padding: 0 8px;
+	background-position: -200px -8px;
+}
+
+.read_message {
+	height: 16px;
+	line-height: 16px;
+	padding: 0 8px;
+	background-position: -265px -135px;
+}
+
+#content_list a:link,#content_list a:visited {
+	overflow: hidden;
+	text-decoration: none;
+	white-space: nowrap;
+	color: #000;
+	font-weight: bold;
+}
+
+#content_list a:hover {
+	text-decoration: underline;
+	cursor: pointer
+}
+
+#content_list tr:hover {
+	background-image: url(../imgs/receive_btn.png);
+	background-repeat: repeat-x;
+	background-position: 0px -3px;
+	cursor: pointer;
+}
+/*不同行背景颜色不用*/
+#content_list .even {
+	background-color: #E9FCEF;
+}
+
+#content_list .odd {
+	background-color: #FFF;
+}
+
+.ibx_lst_bextra {
+	background-color: #E4F1FA;
+	border-bottom: 1px solid #EDEDED;
+	color: #666666;
+	cursor: default;
+	height: 26px;
+	line-height: 26px;
+	padding: 0 10px;
+	margin-top: 0px;
+	font-weight: normal;
+}
