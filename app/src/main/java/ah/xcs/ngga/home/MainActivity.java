@@ -2,16 +2,23 @@ package ah.xcs.ngga.home;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
+import android.webkit.JavascriptInterface;
 import android.webkit.MimeTypeMap;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -25,17 +32,20 @@ import com.loopj.android.http.RequestHandle;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
+import java.io.OutputStream;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ah.xcs.ngga.util.ProxyUtil;
-import ah.xcs.ngga.util.StringUtil;
 import cz.msebera.android.httpclient.Header;
+import fi.iki.elonen.NanoHTTPD;
 
 
 public class MainActivity extends Activity implements DownloadListener {
@@ -43,20 +53,96 @@ public class MainActivity extends Activity implements DownloadListener {
     private ProgressBar myProgressBar;
     private String ref;
     AsyncHttpClient client = new AsyncHttpClient();
+    NanoHTTPD nanoHTTPD;
+    int port = 60000;
+    String wwwroot = "file:///android_asset/web";
+    // variables for camera and choosing files methods
+    private static final int FILECHOOSER_RESULTCODE = 1;
+    private ValueCallback<Uri> mUploadMessage;
+    private Uri mCapturedImageURI = null;
 
+    // the same for Android 5.0 methods only
+    private ValueCallback<Uri[]> mFilePathCallback;
+    private String mCameraPhotoPath;
+    private String TAG = "JWT";
+
+    public int startServer(int port) {
+        try {
+            nanoHTTPD = new WebServer(this, port);
+            nanoHTTPD.start();
+            return port;
+        } catch (IOException e) {
+            if (port < 65535) {
+                startServer(port++);
+            } else {
+                Log.e("err", "本地服务启动失败！");
+            }
+        }
+        return -1;
+    }
+
+    public void stopServer() {
+        if (nanoHTTPD != null)
+            nanoHTTPD.stop();
+    }
+
+    @JavascriptInterface
+    public void exit() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("提示").setMessage("确认是否退出").setNegativeButton("取消", null)
+                .setPositiveButton("退出", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                });
+        builder.create().show();
+    }
+
+    @JavascriptInterface
+    public void clearHistory() {
+        webview.post(new Runnable() {
+            @Override
+            public void run() {
+                webview.clearHistory();
+            }
+        });
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        int servPort = startServer(port);
+        if (servPort == -1) {
+            Toast.makeText(this, "本地服务启动失败", Toast.LENGTH_LONG).show();
+            return;
+        }
         myProgressBar = (ProgressBar) findViewById(R.id.progressBar1);
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
         webview = (WebView) findViewById(R.id.webView1);
 //        ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
 //        client.setProxy("127.0.0.1", 7001);
 
         webview.setWebViewClient(new NggaWebViewClient());
         webview.setWebChromeClient(new MyWebChromeClient());
+        webview.addJavascriptInterface(this, "app");
+        webviewSetting();
+//        webview.clearCache(true);
+        // String url = "http://10.128.148.33:8000/telbook/tel/query!duty";
+//        String url = "http://www.ng.xcs.ah";
+//        String url = "http://www.baidu.com";
+        String url = "http://192.168.30.10:8080";
+        //port 写入cookies
+//        Map<String, String> header = new HashMap<String, String>();
+//        header.put("cookie", "local_port=" + port);
+        webview.loadUrl(url);
+
+    }
+
+    private void webviewSetting() {
         webview.getSettings().setJavaScriptEnabled(true);
         // webview.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         // webview.getSettings().setSupportMultipleWindows(true);
@@ -79,16 +165,18 @@ public class MainActivity extends Activity implements DownloadListener {
         webview.getSettings().setAllowFileAccessFromFileURLs(true);
         webview.getSettings().setAllowUniversalAccessFromFileURLs(true);
         webview.getSettings().setLoadsImagesAutomatically(true);
+        webview.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 //        webview.getSettings().setBlockNetworkLoads(true);
         webview.setDownloadListener(this);
 
         String userAgentString = webview.getSettings().getUserAgentString();
-//        webview.clearCache(true);
-        // String url = "http://10.128.148.33:8000/telbook/tel/query!duty";
-//        String url = "http://www.ng.xcs.ah";
-//        String url = "http://www.baidu.com";
-        String url = "http://192.168.0.114:8080";
-        webview.loadUrl(url);
+        webview.getSettings().setUserAgentString(userAgentString + " SYOA_ANDROID_CLIENT[" + port + "]");
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopServer();
+        super.onDestroy();
     }
 
     private class MyWebChromeClient extends WebChromeClient {
@@ -98,7 +186,108 @@ public class MainActivity extends Activity implements DownloadListener {
             super.onProgressChanged(view, newProgress);
         }
 
+        // For Android < 3.0
+        public void openFileChooser(ValueCallback uploadMsg) {
+            Log.i("For Android < 3.0", "called");
+            mUploadMessage = uploadMsg;
+            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+            i.addCategory(Intent.CATEGORY_OPENABLE);
+            i.setType("*/*");
+            MainActivity.this.startActivityForResult(
+                    Intent.createChooser(i, "File Browser"),
+                    FILECHOOSER_RESULTCODE);
+        }
 
+        // For Android 3.0+
+        public void openFileChooser(ValueCallback uploadMsg,
+                                    String acceptType) {
+            Log.i("For Android 3.0+", "called");
+            mUploadMessage = uploadMsg;
+            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+            i.addCategory(Intent.CATEGORY_OPENABLE);
+            i.setType("*/*");
+            MainActivity.this.startActivityForResult(
+                    Intent.createChooser(i, "File Browser"),
+                    FILECHOOSER_RESULTCODE);
+        }
+
+        public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture) {
+            openFileChooser(uploadMsg);
+            Log.i("For Android Jellybeans", "called");
+            mUploadMessage = uploadMsg;
+            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+            i.addCategory(Intent.CATEGORY_OPENABLE);
+            i.setType("*/*");
+            MainActivity.this.startActivityForResult(
+                    Intent.createChooser(i, "File Browser"),
+                    FILECHOOSER_RESULTCODE);
+        }
+
+        // for Lollipop, all in one
+        public boolean onShowFileChooser(
+                WebView webView, ValueCallback<Uri[]> filePathCallback,
+                WebChromeClient.FileChooserParams fileChooserParams) {
+            if (mFilePathCallback != null) {
+                mFilePathCallback.onReceiveValue(null);
+            }
+            mFilePathCallback = filePathCallback;
+            Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+            contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+            contentSelectionIntent.setType("*/*");
+            startActivityForResult(contentSelectionIntent, FILECHOOSER_RESULTCODE);
+            return true;
+        }
+    }
+
+    // return here when file selected from camera or from SD Card
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // code for all versions except of Lollipop
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            if (requestCode == FILECHOOSER_RESULTCODE) {
+                if (null == this.mUploadMessage) {
+                    return;
+                }
+                Uri result = null;
+                try {
+                    if (resultCode != RESULT_OK) {
+                        result = null;
+                    } else {
+                        // retrieve from the private variable if the intent is null
+                        result = data == null ? mCapturedImageURI : data.getData();
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(), "activity :" + e, Toast.LENGTH_LONG).show();
+                }
+                mUploadMessage.onReceiveValue(result);
+                mUploadMessage = null;
+            }
+
+        } // end of code for all versions except of Lollipop
+        // start of code for Lollipop only
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (requestCode != FILECHOOSER_RESULTCODE || mFilePathCallback == null) {
+                super.onActivityResult(requestCode, resultCode, data);
+                return;
+            }
+            Uri[] results = null;
+            // check that the response is a good one
+            if (resultCode == Activity.RESULT_OK) {
+                if (data == null || data.getData() == null) {
+                    // if there is not data, then we may have taken a photo
+                    if (mCameraPhotoPath != null) {
+                        results = new Uri[]{Uri.parse(mCameraPhotoPath)};
+                    }
+                } else {
+                    String dataString = data.getDataString();
+                    if (dataString != null) {
+                        results = new Uri[]{Uri.parse(dataString)};
+                    }
+                }
+            }
+            mFilePathCallback.onReceiveValue(results);
+            mFilePathCallback = null;
+        } // end of code for Lollipop only
     }
 
     private void showProgress(int newProgress) {
@@ -113,12 +302,15 @@ public class MainActivity extends Activity implements DownloadListener {
         }
     }
 
-
     @Override
     public void onBackPressed() {
-        webview.goBack();
-        // super.onBackPressed();
+        if (webview.canGoBack()) {
+            webview.goBack();
+        } else {
+            exit();
+        }
     }
+
 
     private class NggaWebViewClient extends WebViewClient {
         @Override
@@ -131,17 +323,10 @@ public class MainActivity extends Activity implements DownloadListener {
             return super.shouldOverrideUrlLoading(view, url);
         }
 
-        public String convertToString(InputStream inputStream) {
-            StringBuffer string = new StringBuffer();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            String line = "";
-            try {
-                while ((line = reader.readLine()) != null) {
-                    string.append(line + "\n");
-                }
-            } catch (IOException e) {
-            }
-            return string.toString();
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            myProgressBar.setProgress(100);
+            myProgressBar.setVisibility(View.INVISIBLE);
         }
     }
 
