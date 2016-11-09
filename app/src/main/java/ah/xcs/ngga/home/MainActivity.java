@@ -83,7 +83,7 @@ public class MainActivity extends Activity implements DownloadListener {
 
         // String url = "http://10.128.148.33:8000/telbook/tel/query!duty";
 //        String url = "http://www.ng.xcs.ah";
-        String url = "http://www.baidu.com";
+        String url = "http://10.128.148.33:8090/index.asp";
 //        String url = "http://192.168.118.127:8080/";
         webview.loadUrl(url);
     }
