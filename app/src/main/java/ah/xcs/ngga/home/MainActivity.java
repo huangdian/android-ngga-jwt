@@ -2,14 +2,18 @@ package ah.xcs.ngga.home;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.telephony.TelephonyManager;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
+import android.webkit.JavascriptInterface;
 import android.webkit.MimeTypeMap;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -22,17 +26,12 @@ import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
 import com.loopj.android.http.RequestHandle;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ah.xcs.ngga.util.StringUtil;
+import ah.xcs.ngga.duty.R;
+import ah.xcs.ngga.util.ProxyUtil;
 import cz.msebera.android.httpclient.Header;
 
 
@@ -42,19 +41,56 @@ public class MainActivity extends Activity implements DownloadListener {
     private String ref;
     AsyncHttpClient client = new AsyncHttpClient();
 
+    @JavascriptInterface
+    public void exit() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("提示").setMessage("确认是否退出").setNegativeButton("取消", null)
+                .setPositiveButton("退出", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                });
+        builder.create().show();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        WebView.setWebContentsDebuggingEnabled(true);
+
         myProgressBar = (ProgressBar) findViewById(R.id.progressBar1);
 
         webview = (WebView) findViewById(R.id.webView1);
-//        ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
-//        client.setProxy("127.0.0.1", 7001);
+        ProxyUtil.setProxy(webview, "127.0.0.1", 7001);
+        client.setProxy("127.0.0.1", 7001);
 
         webview.setWebViewClient(new NggaWebViewClient());
         webview.setWebChromeClient(new MyWebChromeClient());
+        webview.addJavascriptInterface(this, "app");
+        webviewSetting();
+        String url = "http://10.128.148.33:8090/index.asp";
+        initDeviceInfo(url);
+
+        webview.loadUrl(url);
+    }
+
+
+    private void initDeviceInfo(String url) {
+        //获取IMEI
+        TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        String imsi = telephonyManager.getSubscriberId();
+        String ssn = telephonyManager.getSimSerialNumber();
+        String imei = telephonyManager.getDeviceId();
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setCookie(url, "ssn=" + ssn);
+        cookieManager.setCookie(url, "imsi=" + imsi);
+        cookieManager.setCookie(url, "imei=" + imei);
+    }
+
+    private void webviewSetting() {
         webview.getSettings().setJavaScriptEnabled(true);
         // webview.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         // webview.getSettings().setSupportMultipleWindows(true);
@@ -62,30 +98,26 @@ public class MainActivity extends Activity implements DownloadListener {
         webview.getSettings().setBuiltInZoomControls(true);
         webview.getSettings().setDisplayZoomControls(false);
         webview.getSettings().setLayoutAlgorithm(
-                WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
+                WebSettings.LayoutAlgorithm.NORMAL);
         webview.getSettings().setUseWideViewPort(true);
         webview.getSettings().setLoadWithOverviewMode(true);
-        webview.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
+        if (Build.VERSION.SDK_INT >= 19) {
+            webview.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);//缓存
+        }
         webview.getSettings().setAppCacheEnabled(true);
         webview.getSettings().setDatabaseEnabled(true);
         webview.getSettings().setDomStorageEnabled(true);
         webview.getSettings().setAllowContentAccess(true);
+        webview.getSettings().setDefaultTextEncodingName("GBK");
         webview.getSettings().setAllowFileAccess(true);
         webview.getSettings().setAllowFileAccessFromFileURLs(true);
         webview.getSettings().setAllowUniversalAccessFromFileURLs(true);
+        webview.getSettings().setLoadsImagesAutomatically(true);
+        webview.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         webview.setDownloadListener(this);
+
         String userAgentString = webview.getSettings().getUserAgentString();
         webview.clearCache(true);
-        // webview.getSettings().setAppCacheEnabled(false);
-
-        // IntentFilter filter = new IntentFilter(Proxy.PROXY_CHANGE_ACTION);
-        // registerReceiver(new ProxyChangeReceiver(), filter);
-
-        // String url = "http://10.128.148.33:8000/telbook/tel/query!duty";
-//        String url = "http://www.ng.xcs.ah";
-        String url = "http://10.128.148.33:8090/index.asp";
-//        String url = "http://192.168.118.127:8080/";
-        webview.loadUrl(url);
     }
 
     private class MyWebChromeClient extends WebChromeClient {
@@ -113,8 +145,11 @@ public class MainActivity extends Activity implements DownloadListener {
 
     @Override
     public void onBackPressed() {
-        webview.goBack();
-        // super.onBackPressed();
+        if (webview.canGoBack()) {
+            webview.goBack();
+        } else {
+            exit();
+        }
     }
 
     private class NggaWebViewClient extends WebViewClient {
@@ -124,36 +159,19 @@ public class MainActivity extends Activity implements DownloadListener {
             if (url.startsWith("ftp://")) {
                 Toast.makeText(getApplicationContext(), "暂不支持ftp下载", Toast.LENGTH_LONG).show();
                 return true;
-            } else {
-                try {
-                    URL aURL = new URL(url);
-                    URLConnection conn = aURL.openConnection();
-                    conn.connect();
-                    InputStream is = conn.getInputStream();
-                    String htmlContent = convertToString(is);
-
-                    String contentEncoding = conn.getContentEncoding();
-                    if(contentEncoding==null||"".equals(contentEncoding)){
-                        contentEncoding = StringUtil.getEncoding(htmlContent);
-                        webview.loadData(htmlContent,conn.getContentType(),contentEncoding);
-                        return true;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return super.shouldOverrideUrlLoading(view, url);
+            } else if (url.startsWith("tel:")) {
+                Intent intent = new Intent(Intent.ACTION_VIEW,
+                        Uri.parse(url));
+                startActivity(intent);
+                return true;
             }
+            return super.shouldOverrideUrlLoading(view, url);
         }
-        public String convertToString(InputStream inputStream){
-            StringBuffer string = new StringBuffer();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            String line="";
-            try {
-                while ((line = reader.readLine()) != null) {
-                    string.append(line + "\n");
-                }
-            } catch (IOException e) {}
-            return string.toString();
+
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            myProgressBar.setProgress(100);
+            myProgressBar.setVisibility(View.INVISIBLE);
         }
     }
 
