@@ -4,10 +4,17 @@ android {
     compileSdkVersion 21
     buildToolsVersion "24.0.2"
 
+    productFlavors {
+        arm {
+            ndk {
+                abiFilter "armeabi-v7a"
+            }
+        }
+    }
     defaultConfig {
         applicationId "ah.xcs.ngga.home"
         minSdkVersion 19
-        targetSdkVersion 21
+        targetSdkVersion 19
     }
 
     buildTypes {
@@ -16,10 +23,17 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
-}
 
+}
+repositories {
+    maven {
+        url 'https://download.01.org/crosswalk/releases/crosswalk/android/maven2'
+    }
+}
 dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:support-v4:21.0.3'
     compile 'com.loopj.android:android-async-http:1.4.9'
     compile 'org.nanohttpd:nanohttpd:2.3.1'
+    compile 'org.xwalk:xwalk_core_library:22.52.561.4'
 }
