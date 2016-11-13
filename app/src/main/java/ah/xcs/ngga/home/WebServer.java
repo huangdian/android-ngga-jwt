@@ -41,7 +41,6 @@ public class WebServer extends NanoHTTPD {
         Method method = session.getMethod();
         String uri = session.getUri();
         long bytes = 0;
-        System.out.println(method + " '" + uri + "' ");
         InputStream descriptor = null;
         if (method.toString().equalsIgnoreCase("GET")) {
             String path;

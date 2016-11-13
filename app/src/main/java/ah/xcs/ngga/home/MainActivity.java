@@ -10,17 +10,11 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
-import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.FileAsyncHttpResponseHandler;
-import com.loopj.android.http.RequestHandle;
-
 import org.xwalk.core.JavascriptInterface;
-import org.xwalk.core.XWalkCookieManager;
 import org.xwalk.core.XWalkNavigationHistory;
 import org.xwalk.core.XWalkPreferences;
 import org.xwalk.core.XWalkResourceClient;
@@ -28,20 +22,15 @@ import org.xwalk.core.XWalkSettings;
 import org.xwalk.core.XWalkUIClient;
 import org.xwalk.core.XWalkView;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import cz.msebera.android.httpclient.Header;
+import ah.xcs.ngga.task.Download;
 import fi.iki.elonen.NanoHTTPD;
 
 
 public class MainActivity extends Activity {
     private XWalkView webview;
     private ProgressBar myProgressBar;
-    private String ref;
-    AsyncHttpClient client = new AsyncHttpClient();
     NanoHTTPD nanoHTTPD;
     int port = 60000;
     String wwwroot = "file:///android_asset/web";
@@ -51,6 +40,7 @@ public class MainActivity extends Activity {
     // the same for Android 5.0 methods only
     private ValueCallback<Uri> mFilePathCallback;
     private String TAG = "JWT";
+    private Download downloadListener;
 
     public int startServer(int port) {
         try {
@@ -121,9 +111,7 @@ public class MainActivity extends Activity {
 //        String url = "http://www.ng.xcs.ah";
 //        String url = "http://www.baidu.com";
         String url = "http://200.200.200.101:8080";
-        //port 写入cookies
-//        Map<String, String> header = new HashMap<String, String>();
-//        header.put("cookie", "local_port=" + port);
+//        String url = "http://127.0.0.1:7020";
         webview.load(url, null);
 
     }
@@ -146,7 +134,6 @@ public class MainActivity extends Activity {
         webview.getSettings().setDatabaseEnabled(true);
         webview.getSettings().setDomStorageEnabled(true);
         webview.getSettings().setAllowContentAccess(true);
-//        webview.getSettings().setDefaultTextEncodingName("GBK");
         webview.getSettings().setAllowFileAccess(true);
         webview.getSettings().setAllowFileAccessFromFileURLs(true);
         webview.getSettings().setAllowUniversalAccessFromFileURLs(true);
@@ -155,7 +142,8 @@ public class MainActivity extends Activity {
 //            webview.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 //        }
 //        webview.getSettings().setBlockNetworkLoads(true);
-//        webview.setDownloadListener();
+        downloadListener = new Download(this);
+        webview.setDownloadListener(downloadListener);
         String userAgentString = webview.getSettings().getUserAgentString();
         webview.getSettings().setUserAgentString(userAgentString + " SYOA_ANDROID_CLIENT[" + port + "]");
     }
@@ -171,6 +159,18 @@ public class MainActivity extends Activity {
             super(view);
         }
 
+        @Override
+        public void onLoadFinished(XWalkView view, String url) {
+            myProgressBar.setProgress(100);
+            myProgressBar.setVisibility(View.INVISIBLE);
+            super.onLoadFinished(view, url);
+        }
+
+        @Override
+        public void onLoadStarted(XWalkView view, String url) {
+            downloadListener.setRef(url);
+            super.onLoadStarted(view, url);
+        }
 
         @Override
         public void onProgressChanged(XWalkView view, int newProgress) {
@@ -182,8 +182,8 @@ public class MainActivity extends Activity {
     // return here when file selected from camera or from SD Card
 
     private void showProgress(int newProgress) {
-        if (newProgress < 100) {
-            if (myProgressBar.getVisibility() == View.INVISIBLE) {
+        if (newProgress > 0 && newProgress < 100) {
+            if (myProgressBar.getVisibility() == View.INVISIBLE || myProgressBar.getVisibility() == View.GONE) {
                 myProgressBar.setVisibility(View.VISIBLE);
             }
             myProgressBar.setProgress(newProgress);
@@ -209,18 +209,11 @@ public class MainActivity extends Activity {
             super(view);
         }
 
-
         //        @Override
 //        public boolean shouldOverrideUrlLoading(XWalkView view, String url) {
 //
 //            return super.shouldOverrideUrlLoading(view, url);
 //        }
-        @Override
-        public void onPageLoadStopped(XWalkView view, String url, LoadStatus status) {
-            myProgressBar.setProgress(100);
-            myProgressBar.setVisibility(View.INVISIBLE);
-            super.onPageLoadStopped(view, url, status);
-        }
 
         @Override
         public void openFileChooser(XWalkView view, ValueCallback<Uri> uploadFile, String acceptType, String capture) {
@@ -254,105 +247,7 @@ public class MainActivity extends Activity {
         mFilePathCallback = null;
     }
 
-    public void onDownloadStart(final String url, final String userAgent,
-                                final String contentDisposition, final String mimeType,
-                                long contentLength) {
-        //todo 对话框提示文件大小，是否下载打开,提供取消按钮
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        String fileSize = "未知";
-        if (contentLength != -1) {
-            fileSize = contentLength < 1024 * 1024 ? (contentLength / 1024) + " KB" : contentLength / (1024 * 1024) + " MB";
-        }
-        builder.setTitle("打开文件").setMessage("当前文件大小" + fileSize + ",是否下载打开文件?").setPositiveButton("下载打开", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                downloadFile(url, userAgent, contentDisposition, mimeType);
-            }
-        }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                return;
-            }
-        });
-        builder.create().show();
-    }
 
-    AlertDialog dialog;
-    RequestHandle req = null;
-    Pattern CONTENT_DISPOSITION_PATTERN = Pattern.compile("filename=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE);
-
-    public void downloadFile(final String url, String userAgent, String contentDisposition, String mimeType) {
-
-        dialog = new AlertDialog.Builder(this).setTitle("文件下载").setMessage("下载中...")
-                .setCancelable(false)
-                .setNegativeButton("取消", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        req.cancel(true);
-                    }
-                }).create();
-
-        XWalkCookieManager manager = new XWalkCookieManager();
-        String cookies = manager.getCookie(url);
-        client.addHeader("cookie", cookies);
-        client.addHeader("Referer", ref);
-        client.setUserAgent(userAgent);
-        contentDisposition = Uri.decode(contentDisposition);
-        String filename = "";
-        Matcher m = CONTENT_DISPOSITION_PATTERN.matcher(contentDisposition);
-        if (m.find()) {
-            filename = m.group(1);
-            filename = filename.replace("filename=", "").replace("\"", "");
-        }
-        if ("text/plain".equals(mimeType) ||
-                "application/octet-stream".equals(mimeType)) {
-            String[] dot = filename.split("\\.");
-            String extention = dot[dot.length - 1];
-            mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extention);
-            if (mimeType == null) {
-                mimeType = "*/*";
-            }
-        }
-        final String mt = mimeType;
-        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        File target = new File(path.getPath(), filename);
-        req = client.get(url, new FileAsyncHttpResponseHandler(target) {
-
-            @Override
-            public void onProgress(long bytesWritten, long totalSize) {
-                //更新进度条
-                int percent = (int) ((bytesWritten * 100f) / totalSize);
-                showProgress(percent);
-            }
-
-            @Override
-            public void onCancel() {
-                showProgress(100);
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, Throwable throwable, File file) {
-
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, File file) {
-                String filename = file.getName();
-                file.setReadable(true);
-                Intent t = new Intent(Intent.ACTION_VIEW);
-                t.setDataAndType(Uri.fromFile(file), mt);
-                t.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                System.out.println(t);
-                try {
-                    dialog.dismiss();
-                    startActivity(t);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        dialog.show();
-    }
 }
 
 
