@@ -144,6 +144,7 @@ public class Download extends XWalkDownloadListener {
                 message.sendToTarget();
             }
 
+
             @Override
             public void onCancel() {
                 dialog.dismiss();
